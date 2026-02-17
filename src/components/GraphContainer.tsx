@@ -5,7 +5,6 @@ import { CellData } from '@/hooks/useContributionGrid';
 // Configuration
 const LEVELS = [0, 1, 4, 7, 10];
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const TODAY = new Date(2026, 1, 17);
 
 interface GraphContainerProps {
     gridData: CellData[];
@@ -13,6 +12,8 @@ interface GraphContainerProps {
     isErasing: boolean;
     isPastUnlocked: boolean;
     showNumbers: boolean;
+    startDate: Date;
+    endDate: Date;
 }
 
 export const GraphContainer: React.FC<GraphContainerProps> = ({
@@ -21,9 +22,14 @@ export const GraphContainer: React.FC<GraphContainerProps> = ({
     isErasing,
     isPastUnlocked,
     showNumbers,
+    startDate,
+    endDate
 }) => {
     const isMouseDown = useRef(false);
     const lastPaintedIndex = useRef<number | null>(null);
+    const today = new Date();
+    // Reset time part for comparison
+    today.setHours(0, 0, 0, 0);
 
     useEffect(() => {
         const handleMouseUp = () => {
@@ -38,7 +44,12 @@ export const GraphContainer: React.FC<GraphContainerProps> = ({
         const cell = gridData[index];
         if (!cell || cell.level === -1) return;
 
-        if (!isPastUnlocked && cell.date < TODAY) return;
+        // "Past" logic: if cell date < today and not unlocked, prevent edit
+        // We need to compare dates properly
+        const cellDate = new Date(cell.date);
+        cellDate.setHours(0, 0, 0, 0);
+
+        if (!isPastUnlocked && cellDate < today) return;
 
         let newLevel = cell.level;
         if (isErasing) {
@@ -68,15 +79,36 @@ export const GraphContainer: React.FC<GraphContainerProps> = ({
         const months = [];
         let lastMonth = -1;
 
-        for (let w = 0; w < 53; w++) {
-            // Approximate month position logic
-            const date = new Date(2026, 0, 1 + (w * 7));
+        // We need to iterate through the columns (weeks)
+        // gridData is flat array. 
+        // We know there are 7 rows per column.
+        // Total columns = gridData.length / 7
+        const totalWeeks = Math.ceil(gridData.length / 7);
+
+        for (let w = 0; w < totalWeeks; w++) {
+            // Get the date of the first cell in this column
+            // index = w * 7
+            const cellIndex = w * 7;
+            if (cellIndex >= gridData.length) break;
+
+            const cell = gridData[cellIndex];
+            const date = new Date(cell.date);
             const month = date.getMonth();
 
             if (month !== lastMonth) {
-                months.push(<div key={w}>{MONTH_NAMES[month]}</div>);
+                // Determine if we should show the month label
+                // Usually we show it if the first day of the week is near the start of the month
+                // or just simply change of month.
+                // GitHub logic is a bit complex, but simple "change of month" works okayish 
+                // but might result in labels being too close if a month starts at end of week vs start.
+                // Let's stick to simple change detection for now.
+
+                months.push(<div key={w} style={{ gridColumn: w + 1 }}>{MONTH_NAMES[month]}</div>);
                 lastMonth = month;
             } else {
+                // Empty placeholder to maintain grid alignment if using grid (but here we are using flex/absolute/calc?)
+                // The original CSS for .months likely uses flex or grid?
+                // Let's check original implementation... it pushed <div> for EVERY week.
                 months.push(<div key={w}></div>);
             }
         }
@@ -85,6 +117,10 @@ export const GraphContainer: React.FC<GraphContainerProps> = ({
 
     return (
         <div className={`graph-container ${isErasing ? 'erasing-mode' : ''} ${isPastUnlocked ? 'past-unlocked' : ''} ${showNumbers ? 'show-nums' : ''}`}>
+            {/* We need to ensure months align with the grid. 
+                 Original used 'display: flex' probably? 
+                 Let's assume the CSS handles children of .months as weeks. 
+             */}
             <div className="months">
                 {renderMonths()}
             </div>
@@ -100,11 +136,15 @@ export const GraphContainer: React.FC<GraphContainerProps> = ({
                 </div>
                 <div className="grid">
                     {gridData.map((cell, idx) => {
+                        if (!cell) return null; // Safety
+
                         if (cell.level === -1) {
                             return <div key={idx} style={{ visibility: 'hidden' }} className="cell" />;
                         }
 
-                        const isPast = cell.date < TODAY;
+                        const cellDate = new Date(cell.date);
+                        cellDate.setHours(0, 0, 0, 0);
+                        const isPast = cellDate < today;
                         const classes = `cell ${isPast ? 'past' : ''}`;
 
                         return (

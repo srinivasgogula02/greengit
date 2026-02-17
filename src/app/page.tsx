@@ -6,16 +6,20 @@ import { Legend } from '@/components/Legend';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { Stats } from '@/components/Stats';
 import { Toolbar } from '@/components/Toolbar';
-<h1 style={{ marginBottom: '20px', fontWeight: 600 }}>🌿 GreenGit 2026</h1>
+import { DateControls } from '@/components/DateControls';
 import { MarketingSection } from '@/components/MarketingSection';
 import { useContributionGrid } from '@/hooks/useContributionGrid';
 
 export default function Home() {
-  const [isPastUnlocked, setIsPastUnlocked] = useState(false);
+  const [isPastUnlocked, setIsPastUnlocked] = useState(true);
   const [isErasing, setIsErasing] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
 
-  const { gridData, updateCell, setGridData, resetGrid } = useContributionGrid();
+  // Date State - Default to 2026
+  const [startDate, setStartDate] = useState<Date>(new Date(2026, 0, 1));
+  const [endDate, setEndDate] = useState<Date>(new Date(2026, 11, 31));
+
+  const { gridData, updateCell, setGridData, resetGrid } = useContributionGrid(startDate, endDate);
 
   const togglePast = () => setIsPastUnlocked(!isPastUnlocked);
   const toggleEraser = () => setIsErasing(!isErasing);
@@ -34,6 +38,10 @@ export default function Home() {
       position: 'relative'
     }}>
 
+      <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 100 }}>
+        <h1 style={{ margin: 0, fontWeight: 600, fontSize: '1.5rem' }}>🌿 GreenGit Planner</h1>
+      </div>
+
       <div style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 100 }}>
         <a href="https://www.buymeacoffee.com/srinivasgogula" target="_blank" rel="noreferrer">
           <img
@@ -46,7 +54,16 @@ export default function Home() {
 
       <ProfileHeader />
 
+
+
       <Stats gridData={gridData} />
+
+      <DateControls
+        startDate={startDate}
+        endDate={endDate}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
+      />
 
       <Toolbar
         gridData={gridData}
@@ -73,6 +90,8 @@ export default function Home() {
           isErasing={isErasing}
           isPastUnlocked={isPastUnlocked}
           showNumbers={showNumbers}
+          startDate={startDate}
+          endDate={endDate}
         />
         <Legend />
       </div>

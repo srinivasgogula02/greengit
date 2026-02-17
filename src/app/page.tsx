@@ -6,7 +6,7 @@ import { Legend } from '@/components/Legend';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { Stats } from '@/components/Stats';
 import { Toolbar } from '@/components/Toolbar';
-<h1 style={{ marginBottom: '20px', fontWeight: 600 }}>GreenGit 2026</h1>
+<h1 style={{ marginBottom: '20px', fontWeight: 600 }}>🌿 GreenGit 2026</h1>
 import { MarketingSection } from '@/components/MarketingSection';
 import { useContributionGrid } from '@/hooks/useContributionGrid';
 
